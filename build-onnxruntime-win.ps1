@@ -252,6 +252,8 @@ python $PSScriptRoot\tools\ci_build\build.py `
 	$ArmFlag `
 	$JavaFlag `
 	--build_shared_lib `
+ 	--use_dml`
+  	--use_dnnl`
     --build_dir $PSScriptRoot\$OutPutPath `
 	--config $BuildType `
 	--parallel `
