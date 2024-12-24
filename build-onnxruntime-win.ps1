@@ -256,8 +256,6 @@ python $PSScriptRoot\tools\ci_build\build.py `
 	--config $BuildType `
 	--parallel `
 	--skip_tests `
- 	--use_dml`
-  	--use_dnnl`
 	--compile_no_warning_as_error `
 	--cmake_generator $VsFlag `
 	$StaticCrtFlag `
