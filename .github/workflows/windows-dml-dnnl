@@ -1,4 +1,4 @@
-name: windows
+name: windows-dml-dnnl
 
 on:
   workflow_dispatch:
