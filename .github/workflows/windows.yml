@@ -99,19 +99,19 @@ jobs:
           7z a ${{ env.STATIC_PKG_NAME }}.7z ${{ env.STATIC_PKG_NAME }}
           rm ${{ env.STATIC_PKG_NAME }} -r -fo
 
-      - name: build x64 java
-        shell: powershell
-        if: ${{ (matrix.arch == 'x64') }}
-        run: |
-          cd onnxruntime-${{ matrix.ver.onnx }}
-          & '.\Launch-VsDevShell.ps1' -VsInstallationPath '${{ matrix.list.vs_path }}' -SkipAutomaticLocation -HostArch amd64 -Arch amd64
-          .\${{ env.BUILD_SCRIPT }} -VsArch x64 -VsVer ${{ matrix.list.vs_ver }} -VsCRT ${{ matrix.crt }} -BuildJava
+      # - name: build x64 java
+      #   shell: powershell
+      #   if: ${{ (matrix.arch == 'x64') }}
+      #   run: |
+      #     cd onnxruntime-${{ matrix.ver.onnx }}
+      #     & '.\Launch-VsDevShell.ps1' -VsInstallationPath '${{ matrix.list.vs_path }}' -SkipAutomaticLocation -HostArch amd64 -Arch amd64
+      #     .\${{ env.BUILD_SCRIPT }} -VsArch x64 -VsVer ${{ matrix.list.vs_ver }} -VsCRT ${{ matrix.crt }} -BuildJava
 
-      - name: 7zip pack java libs
-        if: ${{ (matrix.arch == 'x64') }}
-        run: |
-          cp -r onnxruntime-${{ matrix.ver.onnx }}/build-x64-${{ matrix.list.vs_ver }}-${{ matrix.crt }}/RelWithDebInfo/java/build/libs ${{ env.JAVA_PKG_NAME }}
-          7z a ${{ env.JAVA_PKG_NAME }}.7z ${{ env.JAVA_PKG_NAME }}
+      # - name: 7zip pack java libs
+      #   if: ${{ (matrix.arch == 'x64') }}
+      #   run: |
+      #     cp -r onnxruntime-${{ matrix.ver.onnx }}/build-x64-${{ matrix.list.vs_ver }}-${{ matrix.crt }}/RelWithDebInfo/java/build/libs ${{ env.JAVA_PKG_NAME }}
+      #     7z a ${{ env.JAVA_PKG_NAME }}.7z ${{ env.JAVA_PKG_NAME }}
 
       # 上传artifact
       - name: upload shared lib
@@ -126,12 +126,12 @@ jobs:
           name: ${{ env.STATIC_PKG_NAME }}
           path: ${{ env.STATIC_PKG_NAME }}.7z
 
-      - name: upload java lib
-        if: ${{ (matrix.arch == 'x64') }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.JAVA_PKG_NAME }}
-          path: ${{ env.JAVA_PKG_NAME }}.7z
+      # - name: upload java lib
+      #   if: ${{ (matrix.arch == 'x64') }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ env.JAVA_PKG_NAME }}
+      #     path: ${{ env.JAVA_PKG_NAME }}.7z
 
   release:
     needs: [ windows ]
