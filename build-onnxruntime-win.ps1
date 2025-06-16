@@ -146,7 +146,7 @@ function CollectLibs
     }
 
     # 复制 onnxruntime.dir\Release\onnxruntime.tlog\link.read.1.tlog 文件到 install-static\link.log
-    Copy-Item -Path "onnxruntime.dir\Release\onnxruntime.tlog\link.read.1.tlog" -Destination "install-static\link.log"
+    Copy-Item -Path "onnxruntime.dir\RelWithDebInfo\onnxruntime.tlog\link.read.1.tlog" -Destination "install-static\link.log"
 
     # 创建 install-static\OnnxRuntimeConfig.cmake 文件，并写入相关内容
     Set-Content -Path "install-static\OnnxRuntimeConfig.cmake" -Value "set(OnnxRuntime_INCLUDE_DIRS `${CMAKE_CURRENT_LIST_DIR}/include`)"
