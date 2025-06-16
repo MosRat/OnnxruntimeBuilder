@@ -53,7 +53,7 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateSet('Release', 'Debug', 'MinSizeRel', 'RelWithDebInfo')]
-    [string] $BuildType = 'Release'
+    [string] $BuildType = ' RelWithDebInfo'
 )
 
 
@@ -79,9 +79,9 @@ function CheckLibexeExists
 
 function GetLibsList
 {
-    $InFile = "onnxruntime.dir\Release\onnxruntime.tlog\link.read.1.tlog"
+    $InFile = "onnxruntime.dir\RelWithDebInfo\onnxruntime.tlog\link.read.1.tlog"
     $OutFile = "install-static\libs_list.txt"
-    $LikeLine = "RELEASE\*.LIB"
+    $LikeLine = "RelWithDebInfo\*.LIB"
 
     $data = Get-Content $InFile | ForEach-Object { $_.split(" ") }
     $data | Out-File $OutFile
