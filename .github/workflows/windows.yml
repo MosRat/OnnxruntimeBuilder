@@ -63,7 +63,7 @@ jobs:
           repository: microsoft/onnxruntime
           path: onnxruntime-${{ matrix.ver.onnx }}
           # ref: ${{ matrix.ver.onnx }}
-          ref: 06fff6ea78c224165ec3e70a250cfead251f6da3
+          ref: bacb3f512dc67a70679d20dc2f30e78d59daabaf
           submodules: recursive
 
       # 复制
