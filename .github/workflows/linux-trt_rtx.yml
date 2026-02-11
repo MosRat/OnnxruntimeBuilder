@@ -27,7 +27,7 @@ jobs:
       - name: Install Base Dependencies
         run: |
           apt-get update
-          apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja-build lsb-release
+          apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja-build lsb-release gnupg software-properties-common pkg-config zlib1g-dev libssl-dev libffi-dev
           # libarchive-tools 包含 bsdtar 等工具，有时解压需要
 
       # 2. 获取 ORT 最新 Release Tag (修正点 1)
