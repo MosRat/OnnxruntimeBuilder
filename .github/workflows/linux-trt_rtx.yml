@@ -1,4 +1,4 @@
-name: Build ORT (Linux Static/Shared)
+name: linux-trt_rtx
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         cuda_ver: ["12.9", "13.1"]
-        python_ver: ["3.10"]
+        python_ver: ["3.11"]
 
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -27,7 +27,7 @@ jobs:
       - name: Install Base Dependencies
         run: |
           apt-get update
-          apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja
+          apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja-build
           # libarchive-tools 包含 bsdtar 等工具，有时解压需要
 
       # 2. 获取 ORT 最新 Release Tag (修正点 1)
