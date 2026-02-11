@@ -16,50 +16,59 @@ runs:
       shell: bash
       id: meta
       run: |
-        # 构造文件名：TensorRT-RTX-1.3.0.35-Linux-x86_64-cuda-12.9-Release-external.tar.gz
         FILENAME="TensorRT-RTX-${{ inputs.trt-version }}-Linux-x86_64-cuda-${{ inputs.cuda-version }}-Release-external.tar.gz"
-        # 构造 URL (基于你确认的规律)
         URL="https://developer.nvidia.com/downloads/trt/rtx_sdk/secure/1.3/$FILENAME"
         
         echo "filename=$FILENAME" >> $GITHUB_OUTPUT
         echo "url=$URL" >> $GITHUB_OUTPUT
-        echo "install_path=${{ github.workspace }}/tensorrt-rtx-sdk" >> $GITHUB_OUTPUT
+        # 统一安装路径
+        INSTALL_PATH="${{ github.workspace }}/tensorrt-rtx-sdk"
+        echo "install_path=${INSTALL_PATH}" >> $GITHUB_OUTPUT
 
-    # 使用 GitHub 官方缓存 Action
     - name: Cache TensorRT-RTX
       id: cache-trt
       uses: actions/cache@v4
       with:
         path: ${{ steps.meta.outputs.install_path }}
-        # Cache Key 包含系统、TRT版本和CUDA版本
-        key: trt-rtx-v1-${{ runner.os }}-${{ inputs.trt-version }}-cuda-${{ inputs.cuda-version }}
+        # 缓存 Key
+        key: trt-rtx-v2-${{ runner.os }}-${{ inputs.trt-version }}-cuda-${{ inputs.cuda-version }}
 
-    # 如果缓存没命中，则下载
     - name: Download and Extract
       if: steps.cache-trt.outputs.cache-hit != 'true'
       shell: bash
       run: |
         echo "Cache miss. Downloading from ${{ steps.meta.outputs.url }}..."
         
-        # 使用 wget 下载，-nv (简洁模式), --content-disposition (自动处理文件名)
-        # 注意：如果链接未来变动需要 Cookie，这里可能需要加 Header
-        wget -nv --no-check-certificate "${{ steps.meta.outputs.url }}" -O trt_rtx.tar.gz
+        # 1. 确保目标目录不存在 (防止冲突)
+        rm -rf "${{ steps.meta.outputs.install_path }}"
         
-        echo "Extracting..."
+        # 2. 下载
+        wget -q --no-check-certificate "${{ steps.meta.outputs.url }}" -O trt_rtx.tar.gz
+        
+        # 3. 解压到临时目录
         mkdir -p temp_extract
         tar -xf trt_rtx.tar.gz -C temp_extract
         
-        # 移动到最终目录 (github workspace 下)
-        # 查找解压后的文件夹（名字通常带有版本号），并重命名为统一名称
-        FOUND_DIR=$(find temp_extract -maxdepth 1 -type d -name "TensorRT-RTX*" | head -n 1)
-        mv "$FOUND_DIR" "${{ steps.meta.outputs.install_path }}"
+        # 4. 查找解压出的真实目录名 (通常是 TensorRT-RTX-1.3.0.35)
+        # 使用 find 查找 temp_extract 下的第一个子目录
+        EXTRACTED_DIR=$(find temp_extract -maxdepth 1 -mindepth 1 -type d | head -n 1)
         
-        # 清理
+        echo "Found extracted directory: $EXTRACTED_DIR"
+        
+        # 5. 移动 (重命名) 到最终目标路径
+        if [ -d "$EXTRACTED_DIR" ]; then
+          mv "$EXTRACTED_DIR" "${{ steps.meta.outputs.install_path }}"
+          echo "✅ Moved to ${{ steps.meta.outputs.install_path }}"
+        else
+          echo "❌ Error: Could not find extracted directory in temp_extract"
+          ls -R temp_extract
+          exit 1
+        fi
+        
+        # 6. 清理
         rm -rf temp_extract trt_rtx.tar.gz
 
-    # 设置环境变量供后续步骤使用
     - name: Export Environment Variables
       shell: bash
       run: |
         echo "TRT_RTX_HOME=${{ steps.meta.outputs.install_path }}" >> $GITHUB_ENV
-        echo "✅ TensorRT-RTX Home set to: ${{ steps.meta.outputs.install_path }}"

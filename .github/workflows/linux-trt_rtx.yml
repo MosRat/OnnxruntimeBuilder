@@ -54,7 +54,7 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda_ver }}.0
-          method: 'network'
+          method: ${{ contains(matrix.cuda_ver, '13') && 'local' || 'network' }}
           # 安装 nvcc 和编译必要的库
         #   sub-packages: '["nvcc", "cudart", "visual_studio_integration"]'
 
