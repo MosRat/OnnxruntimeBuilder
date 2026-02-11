@@ -39,34 +39,38 @@ runs:
       run: |
         echo "Cache miss. Downloading from ${{ steps.meta.outputs.url }}..."
         
-        # 1. 确保目标目录不存在 (防止冲突)
-        rm -rf "${{ steps.meta.outputs.install_path }}"
+        # 定义最终安装路径
+        INSTALL_PATH="${{ steps.meta.outputs.install_path }}"
+        
+        # 1. 强制清理并重新创建最终目标目录 (确保它一定存在且为空)
+        rm -rf "$INSTALL_PATH"
+        mkdir -p "$INSTALL_PATH"
         
         # 2. 下载
         wget -q --no-check-certificate "${{ steps.meta.outputs.url }}" -O trt_rtx.tar.gz
         
-        # 3. 解压到临时目录
-        mkdir -p temp_extract
-        tar -xf trt_rtx.tar.gz -C temp_extract
+        # 3. 直接解压到目标目录
+        # --strip-components=1 的作用是：解压时自动去掉第一层目录 (即去掉 TensorRT-RTX-1.3.0.35 这一层)
+        # 直接把里面的 bin, lib, include 等甩到 INSTALL_PATH 里
+        echo "Extracting directly to $INSTALL_PATH ..."
+        tar -xf trt_rtx.tar.gz -C "$INSTALL_PATH" --strip-components=1
         
-        # 4. 查找解压出的真实目录名 (通常是 TensorRT-RTX-1.3.0.35)
-        # 使用 find 查找 temp_extract 下的第一个子目录
-        EXTRACTED_DIR=$(find temp_extract -maxdepth 1 -mindepth 1 -type d | head -n 1)
-        
-        echo "Found extracted directory: $EXTRACTED_DIR"
-        
-        # 5. 移动 (重命名) 到最终目标路径
-        if [ -d "$EXTRACTED_DIR" ]; then
-          mv "$EXTRACTED_DIR" "${{ steps.meta.outputs.install_path }}"
-          echo "✅ Moved to ${{ steps.meta.outputs.install_path }}"
+        # 4. 验证解压结果
+        if [ -f "$INSTALL_PATH/include/NvInfer.h" ]; then
+          echo "✅ Successfully installed to $INSTALL_PATH"
+          ls -l "$INSTALL_PATH"
         else
-          echo "❌ Error: Could not find extracted directory in temp_extract"
-          ls -R temp_extract
+          echo "❌ Error: Extraction failed. NvInfer.h not found."
+          # 如果失败，可能是压缩包结构变了，不是一层目录。列出内容调试。
+          # 备用方案：如果不确定是否有一层目录，可以尝试去掉 --strip-components=1
+          # 但根据你之前的日志 Found extracted directory: temp_extract/TensorRT-RTX-1.3.0.35
+          # 说明确实有一层目录，所以 strip-components=1 是完美的解决方案。
+          ls -R "$INSTALL_PATH"
           exit 1
         fi
         
-        # 6. 清理
-        rm -rf temp_extract trt_rtx.tar.gz
+        # 5. 清理压缩包
+        rm -f trt_rtx.tar.gz
 
     - name: Export Environment Variables
       shell: bash
