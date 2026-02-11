@@ -1,0 +1,85 @@
+name: Build ORT (Modular)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # 核心：使用 Ubuntu 20.04 容器确保 glibc 兼容性
+    container:
+      image: ubuntu:20.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda_ver: ["12.9", "13.1"]
+        python_ver: ["3.10"]
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. 安装基础依赖 (因为容器是空的)
+      - name: Install Base Dependencies
+        run: |
+          apt-get update
+          apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo ninja
+          # Jimver Action 有时依赖 sudo，容器默认 root 其实不需要，但为了兼容性装上
+          
+      # 2. 初始化 CUDA (使用社区 Action)
+      # 只要版本号是规范的 (12.9.0 等)，该 Action 能自动下载并缓存
+      # 注意：如果 12.9/13.1 太新不在它的已知列表里，它会尝试从 Nvidia 官网下载 runfile
+      - name: Setup CUDA
+        uses: Jimver/cuda-toolkit@v0.2.30
+        id: cuda-toolkit
+        with:
+          cuda: ${{ matrix.cuda_ver }}.0
+          method: 'network' # 推荐 network，如果太慢或版本找不到可尝试 'local'
+        #   sub-packages: '["nvcc", "cudart", "visual_studio_integration"]' 
+          # 注意：visual_studio_integration 往往对 CMake 查找 CUDA 很有帮助，虽然这是 Linux
+          
+      # 3. 初始化 TensorRT-RTX (使用我们刚才写的本地 Action)
+      - name: Setup TensorRT-RTX
+        uses: ./.github/actions/setup-trt-rtx
+        with:
+          cuda-version: ${{ matrix.cuda_ver }}
+          trt-version: '1.3.0.35' # 默认就是这个，也可以不写
+
+      # 4. 安装 Python (Wheel 构建需要)
+      - name: Install Python ${{ matrix.python_ver }}
+        run: |
+          apt-get install -y software-properties-common
+          add-apt-repository -y ppa:deadsnakes/ppa
+          apt-get update
+          apt-get install -y python${{ matrix.python_ver }} python${{ matrix.python_ver }}-dev python${{ matrix.python_ver }}-distutils
+          curl -sS https://bootstrap.pypa.io/get-pip.py | python${{ matrix.python_ver }}
+
+      # 5. 安装新版 CMake (Ubuntu 20.04 自带的太老)
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2.0
+        with:
+          cmake-version: '3.29.0'
+
+      # 6. 构建
+      - name: Build ORT
+        working-directory: ${{ github.workspace }}
+        run: |
+          chmod +x build.sh
+          ./build.sh
+        env:
+          ORT_PATH: onnxruntime
+          # TRT_RTX_HOME 已经在上面的 Action 中被自动注入到 ENV 了
+          CUDA_VERSION: ${{ matrix.cuda_ver }}
+          PYTHON_EXEC: python${{ matrix.python_ver }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: onnxruntime-linux-cuda${{ matrix.cuda_ver }}-rtx
+          path: |
+            ${{ github.workspace }}/output/*.7z
+            ${{ github.workspace }}/output/*.whl
