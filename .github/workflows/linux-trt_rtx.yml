@@ -67,13 +67,11 @@ jobs:
           # 如果你要针对 12.9 使用特定版本 TRT，可以在这里控制 inputs
 
       # 6. 安装 Python (用于编译 Wheel)
-      - name: Install Python ${{ matrix.python_ver }}
-        run: |
-          apt-get install -y software-properties-common
-          add-apt-repository -y ppa:deadsnakes/ppa
-          apt-get update
-          apt-get install -y python${{ matrix.python_ver }} python${{ matrix.python_ver }}-dev python${{ matrix.python_ver }}-distutils
-          curl -sS https://bootstrap.pypa.io/get-pip.py | python${{ matrix.python_ver }}
+      - name: Setup Python 
+        uses: actions/setup-python@v5
+        with:
+            python-version: ${{ matrix.python_ver }}
+            cache: 'pip'
 
       # 7. 安装 CMake (Ubuntu 20.04 自带太老)
       - name: Install CMake
