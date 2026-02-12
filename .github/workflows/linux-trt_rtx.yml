@@ -29,6 +29,20 @@ jobs:
           apt-get update
           apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja-build lsb-release gnupg software-properties-common pkg-config zlib1g-dev libssl-dev libffi-dev openssl
           # libarchive-tools 包含 bsdtar 等工具，有时解压需要
+          
+      - name: Install GCC 11
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt-get update
+          sudo apt-get install -y gcc-11 g++-11
+          
+          # 将 gcc-11 设为默认 gcc
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100 --slave /usr/bin/g++ g++ /usr/bin/g++-11
+          
+          # 验证版本
+          gcc --version
 
       # 6. 安装 Python (用于编译 Wheel)
       - name: Install uv
