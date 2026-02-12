@@ -6,7 +6,7 @@ ORT_ROOT=${ORT_PATH:-"onnxruntime"}
 TRT_HOME=${TRT_RTX_HOME}
 CUDA_VER=${CUDA_VERSION}
 CUDA_PATH=${CUDA_PATH}
-PYTHON_CMD=${PYTHON_EXEC:-"uv run"}
+PYTHON_CMD=${PYTHON_EXEC:-"python"}
 PIP_CMD=${PIP_EXEC:-"uv pip"}
 
 # 定义构建目录名称 (与 build.py 参数对应)
@@ -132,6 +132,8 @@ function collect_shared_lib() {
 mkdir -p $DIST_DIR
 # $PIP_CMD -m pip install numpy setuptools wheel packaging
 source ./.venv/bin/activate
+echo "use tensorrt-rtx in $TRT_RTX_HOME"
+ls -laR $TRT_RTX_HOME
 
 cd $ORT_ROOT
 
@@ -147,7 +149,7 @@ $PYTHON_CMD tools/ci_build/build.py \
     --cmake_generator "Ninja" \
     --cuda_home "$CUDA_PATH" \
     --use_nv_tensorrt_rtx  \
-    --tensorrt_rtx_home "$TRT_HOME" \
+    --tensorrt_rtx_home "$TRT_RTX_HOME" \
     --cmake_extra_defines CMAKE_INSTALL_PREFIX=./install \
     --allow_running_as_root
 
