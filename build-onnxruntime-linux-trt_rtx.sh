@@ -131,7 +131,7 @@ function collect_shared_lib() {
 
 mkdir -p $DIST_DIR
 # $PIP_CMD -m pip install numpy setuptools wheel packaging
-source ./venv/bin/activate
+source ./.venv/bin/activate
 
 cd $ORT_ROOT
 
