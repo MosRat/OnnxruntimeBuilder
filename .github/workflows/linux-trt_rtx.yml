@@ -30,6 +30,22 @@ jobs:
           apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja-build lsb-release gnupg software-properties-common pkg-config zlib1g-dev libssl-dev libffi-dev openssl
           # libarchive-tools 包含 bsdtar 等工具，有时解压需要
 
+      # 6. 安装 Python (用于编译 Wheel)
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      
+      - name: Setup Python Environment
+        run: |
+          uv init --python ${{ matrix.python_ver }} 
+          uv venv
+          uv pip install --no-cache-dir numpy setuptools wheel packaging
+    
+      # 7. 安装 CMake (Ubuntu 20.04 自带太老)
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2.0
+        with:
+          cmake-version: '3.29.0'
+
       # 2. 获取 ORT 最新 Release Tag (修正点 1)
       - name: Get Latest ORT Tag
         id: get_tag
@@ -66,47 +82,6 @@ jobs:
           cuda-version: ${{ matrix.cuda_ver }}
           # 如果你要针对 12.9 使用特定版本 TRT，可以在这里控制 inputs
 
-      # 6. 安装 Python (用于编译 Wheel)
-      - name: Install Python ${{ matrix.python_ver }}
-        run: |
-          # 1. 再次确保 update，防止之前的缓存过期
-          apt-get update -y
-          
-          # 2. 安装 PPA 管理工具 (如果 Base Dependencies 没装全的话)
-          apt-get install -y software-properties-common gpg-agent curl
-          
-          # 3. 添加 Deadsnakes PPA (专门提供各版本 Python)
-          add-apt-repository -y ppa:deadsnakes/ppa
-          
-          # 4. [关键] 必须再次 Update 才能看到新 repo 里的包！
-          apt-get update -y
-          
-          # 5. 安装 Python 及其开发头文件 (注意: deadsnakes 不包含 pip)
-          # python3.11-distutils 在新版中通常包含在核心或 venv 中，或者是 python3-distutils
-          # 这里安装 venv 和 dev 通常就够了
-          apt-get install -y \
-            python${{ matrix.python_ver }} \
-            python${{ matrix.python_ver }}-dev \
-            python${{ matrix.python_ver }}-venv \
-            python${{ matrix.python_ver }}-distutils || echo "distutils included or not found"
-          
-          # 6. [关键] 手动安装 pip (这是最稳的方法，避开 apt 的旧版 pip)
-          curl -sS https://bootstrap.pypa.io/get-pip.py | python${{ matrix.python_ver }}
-          
-          # 7. 建立软链接 (可选，方便直接敲 python)
-          update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${{ matrix.python_ver }} 1
-          update-alternatives --install /usr/bin/python python /usr/bin/python${{ matrix.python_ver }} 1
-          
-          # 8. 验证
-          python --version
-          pip --version
-
-      # 7. 安装 CMake (Ubuntu 20.04 自带太老)
-      - name: Install CMake
-        uses: jwlawson/actions-setup-cmake@v2.0
-        with:
-          cmake-version: '3.29.0'
-
       # 8. 执行构建
       - name: Build ORT
         working-directory: ${{ github.workspace }}
@@ -117,7 +92,8 @@ jobs:
           ORT_PATH: onnxruntime
           # TRT_RTX_HOME 由 setup-trt-rtx Action 注入
           CUDA_VERSION: ${{ matrix.cuda_ver }}
-          PYTHON_EXEC: python${{ matrix.python_ver }}
+          CUDA_PATH: ${{steps.cuda-toolkit.outputs.CUDA_PATH}}
+        #   PYTHON_EXEC: python${{ matrix.python_ver }} # 用 uv
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

@@ -5,7 +5,9 @@ set -e
 ORT_ROOT=${ORT_PATH:-"onnxruntime"}
 TRT_HOME=${TRT_RTX_HOME}
 CUDA_VER=${CUDA_VERSION}
-PYTHON_CMD=${PYTHON_EXEC:-"python3"}
+CUDA_PATH=${CUDA_PATH}
+PYTHON_CMD=${PYTHON_EXEC:-"uv run"}
+PIP_CMD=${PIP_EXEC:-"uv pip"}
 
 # 定义构建目录名称 (与 build.py 参数对应)
 BUILD_DIR_NAME="build-release"
@@ -128,7 +130,8 @@ function collect_shared_lib() {
 # ================= Main Build Execution =================
 
 mkdir -p $DIST_DIR
-$PYTHON_CMD -m pip install numpy setuptools wheel packaging
+# $PIP_CMD -m pip install numpy setuptools wheel packaging
+source ./venv/bin/activate
 
 cd $ORT_ROOT
 
@@ -137,16 +140,14 @@ echo "Starting build..."
 $PYTHON_CMD tools/ci_build/build.py \
     --build_dir "$BUILD_DIR_NAME" \
     --config Release \
-    --parallel $(nproc) \
+    --parallel \
     --skip_tests \
     --build_shared_lib \
     --build_wheel \
-    --enable_pybind \
-    --use_cuda \
-    --cuda_version "$CUDA_VER" \
-    --cuda_home "/usr/local/cuda-$CUDA_VER" \
-    --use_tensorrt \
-    --tensorrt_home "$TRT_HOME" \
+    --cmake_generator "Ninja" \
+    --cuda_home "$CUDA_PATH" \
+    --use_nv_tensorrt_rtx  \
+    --tensorrt_rtx_home "$TRT_HOME" \
     --cmake_extra_defines CMAKE_INSTALL_PREFIX=./install \
     --allow_running_as_root
 
