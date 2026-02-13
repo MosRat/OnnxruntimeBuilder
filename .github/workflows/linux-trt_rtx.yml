@@ -50,7 +50,7 @@ jobs:
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh 15  # 安装 Clang 15
-          sudo apt-get install -y lld-15 libstdc++-11-dev
+          sudo apt-get install -y lld-15 
           
           # 建立软链接，让 clang/clang++ 命令指向版本 15
           sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
