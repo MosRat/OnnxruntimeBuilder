@@ -29,20 +29,21 @@ jobs:
           apt-get update
           apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja-build lsb-release gnupg software-properties-common pkg-config zlib1g-dev libssl-dev libffi-dev openssl
           # libarchive-tools 包含 bsdtar 等工具，有时解压需要
-          
+
       - name: Install GCC 11
         run: |
           sudo apt-get update
           sudo apt-get install -y software-properties-common
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt-get update
-          sudo apt-get install -y gcc-11 g++-11
+          sudo apt-get install -y gcc-11 g++-11 binutils
           
           # 将 gcc-11 设为默认 gcc
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100 --slave /usr/bin/g++ g++ /usr/bin/g++-11
           
           # 验证版本
           gcc --version
+          ld --version
 
       # 6. 安装 Python (用于编译 Wheel)
       - name: Install uv
@@ -78,23 +79,23 @@ jobs:
           ref: ${{ steps.get_tag.outputs.tag }} # 使用刚才获取的 Tag
           submodules: recursive
 
+      # 5. 初始化 TensorRT-RTX (使用我们定义的本地 Action)
+      - name: Setup TensorRT-RTX
+        uses: ./.github/actions/setup-trt-rtx
+        with:
+          cuda-version: ${{ matrix.cuda_ver }}
+          
       # 4. 初始化 CUDA (使用 Jimver Action 自动缓存)
       - name: Setup CUDA
         uses: Jimver/cuda-toolkit@v0.2.30
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda_ver }}.0
+          # method: 'local'
           method: ${{ contains(matrix.cuda_ver, '13') && 'local' || 'network' }}
           # 安装 nvcc 和编译必要的库
         #   sub-packages: '["nvcc", "cudart", "visual_studio_integration"]'
 
-      # 5. 初始化 TensorRT-RTX (使用我们定义的本地 Action)
-      # 请确保 .github/actions/setup-trt-rtx/action.yml 文件存在 (见上一条回复)
-      - name: Setup TensorRT-RTX
-        uses: ./.github/actions/setup-trt-rtx
-        with:
-          cuda-version: ${{ matrix.cuda_ver }}
-          # 如果你要针对 12.9 使用特定版本 TRT，可以在这里控制 inputs
 
       # 8. 执行构建
       - name: Build ORT
