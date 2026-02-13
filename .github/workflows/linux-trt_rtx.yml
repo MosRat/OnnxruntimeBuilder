@@ -44,15 +44,18 @@ jobs:
       #     # 验证版本
       #     gcc --version
           
-      - name: Install Clang 12
+      - name: Install Clang 15
         run: |
           sudo apt-get update
-          # Ubuntu 20.04 官方源里就有 clang-12
-          sudo apt-get install -y clang-12
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 15  # 安装 Clang 15
+          sudo apt-get install -y lld-15 libstdc++-11-dev
           
-          # 建立软链接，让 clang/clang++ 命令指向版本 12
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
-          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-12 100
+          # 建立软链接，让 clang/clang++ 命令指向版本 15
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100 
+          sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-15 100
           
           # 验证
           clang --version
@@ -119,6 +122,7 @@ jobs:
         env:
           CC: clang
           CXX: clang++
+          CMAKE_EXE_LINKER_FLAGS: "-fuse-ld=lld" 
           ORT_PATH: onnxruntime
           # TRT_RTX_HOME 由 setup-trt-rtx Action 注入
           CUDA_VERSION: ${{ matrix.cuda_ver }}
