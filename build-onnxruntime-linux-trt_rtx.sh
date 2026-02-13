@@ -151,6 +151,7 @@ $PYTHON_CMD tools/ci_build/build.py \
     --use_nv_tensorrt_rtx  \
     --tensorrt_rtx_home "$TRT_RTX_HOME" \
     --cmake_extra_defines CMAKE_INSTALL_PREFIX=./install \
+    --compile_no_warning_as_error \
     --allow_running_as_root
 
 # 检查构建是否成功
