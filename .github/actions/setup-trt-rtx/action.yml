@@ -22,7 +22,7 @@ runs:
         echo "filename=$FILENAME" >> $GITHUB_OUTPUT
         echo "url=$URL" >> $GITHUB_OUTPUT
         # 统一安装路径
-        INSTALL_PATH="${{ github.workspace }}/tensorrt-rtx-sdk"
+        INSTALL_PATH="$(pwd)/tensorrt-rtx-sdk"
         echo "install_path=${INSTALL_PATH}" >> $GITHUB_OUTPUT
 
     - name: Cache TensorRT-RTX
