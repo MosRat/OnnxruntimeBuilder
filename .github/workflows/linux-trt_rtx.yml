@@ -44,18 +44,18 @@ jobs:
       #     # 验证版本
       #     gcc --version
           
-      - name: Install Clang 15
+      - name: Install Clang 18
         run: |
           sudo apt-get update
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 15  # 安装 Clang 15
-          sudo apt-get install -y lld-15 
+          sudo ./llvm.sh 18  # 安装 Clang 18
+          sudo apt-get install -y lld-18 
           
-          # 建立软链接，让 clang/clang++ 命令指向版本 15
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
-          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100 
-          sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-15 100
+          # 建立软链接，让 clang/clang++ 命令指向版本 18
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100 
+          sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-18 100
           
           # 验证
           clang --version
