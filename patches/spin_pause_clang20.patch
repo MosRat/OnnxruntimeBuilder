@@ -1,34 +1,33 @@
 diff --git a/onnxruntime/core/common/spin_pause.cc b/onnxruntime/core/common/spin_pause.cc
-index 0000000000..0000000000 100644
+index 1e5f8a1f1f..1e5f8a1f1f 100644
 --- a/onnxruntime/core/common/spin_pause.cc
 +++ b/onnxruntime/core/common/spin_pause.cc
-@@ -21,7 +21,8 @@ namespace concurrency {
+@@ -23,15 +23,25 @@ namespace concurrency {
  // Intrinsic to use in spin-loops
  void SpinPause() {
- #if (defined(_M_AMD64) || defined(__x86_64__)) && \\
--    !defined(_M_ARM64EC) &&                       \\
-+    !defined(_M_ARM64EC) &&                       \\
-@@ -32,11 +33,17 @@ void SpinPause() {
+ #if (defined(_M_AMD64) || defined(__x86_64__)) && \
+-    !defined(_M_ARM64EC) &&                       \
++    !defined(_M_ARM64EC) &&                       \
+     !defined(__ANDROID__) &&                      \
+     !defined(__APPLE__)
+
    static const bool has_tpause = CPUIDInfo::GetCPUIDInfo().HasTPAUSE();
    static constexpr uint64_t tpause_spin_delay_cycles = 1000;
    if (has_tpause) {
--#if defined(_WIN32)
--    _tpause(0x0, __rdtsc() + tpause_spin_delay_cycles);
+ #if defined(_WIN32)
+     _tpause(0x0, __rdtsc() + tpause_spin_delay_cycles);
 -#elif defined(__linux__)
 -    __builtin_ia32_tpause(0x0, __rdtsc() + tpause_spin_delay_cycles);
--#else
-+#if defined(_WIN32)
-+    _tpause(0x0, __rdtsc() + tpause_spin_delay_cycles);
 +#elif defined(__linux__)
 +    // Clang 20 及之后版本调整了 __builtin_ia32_tpause 的签名，
-+    // 1.24.1 这里的调用在新 Clang 下编译不过。为避免兼容性问题，
-+    // 在 Clang 下统一退回到 _mm_pause()。
++    // 1.24.1 这里的 2 参数调用在新 Clang 下会报编译错误。
++    // 为避免在 x86_64 Linux + Clang 的组合下构建失败，这里在
++    // Clang 下退回到 _mm_pause()，其他编译器仍使用 tpause。
 +#  if defined(__clang__)
 +    _mm_pause();
 +#  else
 +    __builtin_ia32_tpause(0x0, __rdtsc() + tpause_spin_delay_cycles);
 +#  endif
-+#else
+ #else
      _mm_pause();
  #endif
-   } else {

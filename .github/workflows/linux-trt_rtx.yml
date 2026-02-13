@@ -98,10 +98,6 @@ jobs:
       - name: Patch ORT for Clang 20
         working-directory: ${{ github.workspace }}/onnxruntime
         run: |
-          ls -la
-          ls .. -la
-          ls ../patches/ -la
-          ls ../patches/spin_pause_clang20.patch -la
           pwd
           patch -p1 < ../patches/spin_pause_clang20.patch
 
