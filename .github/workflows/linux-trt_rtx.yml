@@ -29,6 +29,9 @@ jobs:
           apt-get update
           apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja-build lsb-release gnupg software-properties-common pkg-config zlib1g-dev libssl-dev libffi-dev openssl p7zip-full
           # libarchive-tools 包含 bsdtar 等工具，有时解压需要
+          # 清理缓存
+          apt-get clean
+          rm -rf /var/lib/apt/lists/*
 
       - name: Install GCC 11
         run: |
@@ -59,6 +62,10 @@ jobs:
           
           # 验证
           clang --version
+          # 关键：安装完立即清理
+          rm llvm.sh
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
           
 
       # 6. 安装 Python (用于编译 Wheel)
@@ -114,10 +121,11 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda_ver }}.0
-          # method: 'local'
-          method: ${{ contains(matrix.cuda_ver, '13') && 'local' || 'network' }}
+          method: 'local'
+          # method: ${{ contains(matrix.cuda_ver, '13') && 'local' || 'network' }}
           # 安装 nvcc 和编译必要的库
-        #   sub-packages: '["nvcc", "cudart", "visual_studio_integration"]'
+          # sub-packages: '["nvcc", "cudart", "visual_studio_integration"]'
+          linux-local-args: '["--toolkit"]'
 
 
       # 8. 执行构建
