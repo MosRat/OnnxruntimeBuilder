@@ -123,6 +123,7 @@ jobs:
           CC: clang
           CXX: clang++
           CMAKE_EXE_LINKER_FLAGS: "-fuse-ld=lld" 
+          CXXFLAGS: "-Wno-error=array-bounds"
           ORT_PATH: onnxruntime
           # TRT_RTX_HOME 由 setup-trt-rtx Action 注入
           CUDA_VERSION: ${{ matrix.cuda_ver }}

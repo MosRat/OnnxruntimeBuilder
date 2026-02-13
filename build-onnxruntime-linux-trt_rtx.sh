@@ -150,9 +150,11 @@ $PYTHON_CMD tools/ci_build/build.py \
     --cuda_home "$CUDA_PATH" \
     --use_nv_tensorrt_rtx  \
     --tensorrt_rtx_home "$TRT_RTX_HOME" \
-    --cmake_extra_defines CMAKE_INSTALL_PREFIX=./install \
     --compile_no_warning_as_error \
-    --allow_running_as_root
+    --allow_running_as_root \
+    --cmake_extra_defines \
+  CMAKE_INSTALL_PREFIX=./install \
+  CMAKE_CXX_FLAGS="-Wno-error=array-bounds"
 
 # 检查构建是否成功
 if [ ! -d "$BUILD_DIR_NAME/Release" ]; then
