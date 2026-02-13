@@ -30,32 +30,32 @@ jobs:
           apt-get install -y wget curl git build-essential ca-certificates tar unzip zip jq sudo libarchive-tools ninja-build lsb-release gnupg software-properties-common pkg-config zlib1g-dev libssl-dev libffi-dev openssl
           # libarchive-tools 包含 bsdtar 等工具，有时解压需要
 
-      - name: Install GCC 12
+      - name: Install GCC 11
         run: |
           sudo apt-get update
           sudo apt-get install -y software-properties-common
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt-get update
-          sudo apt-get install -y gcc-12 g++-12 
+          sudo apt-get install -y gcc-11 g++-11 
           
           # 将 gcc-11 设为默认 gcc
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 --slave /usr/bin/g++ g++ /usr/bin/g++-12
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100 --slave /usr/bin/g++ g++ /usr/bin/g++-11
           
           # 验证版本
           gcc --version
           
-      - name: Install Clang 19
+      - name: Install Clang 20
         run: |
           sudo apt-get update
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 18  # 安装 Clang 19
-          sudo apt-get install -y lld-19 
+          sudo ./llvm.sh 20  # 安装 Clang 20
+          sudo apt-get install -y lld-20 
           
-          # 建立软链接，让 clang/clang++ 命令指向版本 18
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 100
-          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 100 
-          sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-19 100
+          # 建立软链接，让 clang/clang++ 命令指向版本 20
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-20 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-20 100 
+          sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-20 100
           
           # 验证
           clang --version
