@@ -218,28 +218,64 @@ collect_static_libs  # 这里会调用 combine_libs_linux 解析当前目录下�
 
 # ================= Packaging =================
 
-# 1. 打包 Shared
+# 1. 动态修正输出目录路径
+# 之前的 ../../$DIST_DIR 失败了，说明 output 在更上一层 (通常是 3 层)
+# 这里我们直接获取绝对路径，避免相对路径猜测
+if [ -d "../../../$DIST_DIR" ]; then
+    # 场景: 运行在 Workspace/onnxruntime/build-release/Release
+    DIST_ABS_PATH=$(cd "../../../$DIST_DIR" && pwd)
+elif [ -d "../../$DIST_DIR" ]; then
+    # 场景: 运行在 onnxruntime/build-release/Release (如果是在 onnxruntime 根目录起跑)
+    DIST_ABS_PATH=$(cd "../../$DIST_DIR" && pwd)
+else
+    # Fallback: 尝试直接创建（以防万一）或报错
+    echo "⚠️ Warning: Could not find existing output dir at ../../$DIST_DIR or ../../../$DIST_DIR"
+    echo "Assuming ../../../$DIST_DIR and creating it..."
+    mkdir -p "../../../$DIST_DIR"
+    DIST_ABS_PATH=$(cd "../../../$DIST_DIR" && pwd)
+fi
+
+echo "Resolved Output Directory: $DIST_ABS_PATH"
+
+# 2. 打包 Shared Library
 SHARED_PKG_NAME="onnxruntime-linux-x64-cuda${CUDA_VER}-trt-rtx-shared"
-# 将处理好的 install 目录移出来打包
-cp -r install ../../$DIST_DIR/$SHARED_PKG_NAME
-cd ../../$DIST_DIR
-7z a ${SHARED_PKG_NAME}.7z $SHARED_PKG_NAME
-rm -rf $SHARED_PKG_NAME
+echo "📦 Packaging Shared Libs -> $SHARED_PKG_NAME"
 
-# 2. 打包 Static
+# 清理旧数据并复制
+rm -rf "$DIST_ABS_PATH/$SHARED_PKG_NAME"
+cp -r install "$DIST_ABS_PATH/$SHARED_PKG_NAME"
+
+# 切换到 output 目录进行压缩 (使用 pushd 避免迷失路径)
+pushd "$DIST_ABS_PATH" > /dev/null
+7z a "${SHARED_PKG_NAME}.7z" "$SHARED_PKG_NAME"
+rm -rf "$SHARED_PKG_NAME" # 压缩后删除文件夹
+popd > /dev/null
+
+# 3. 打包 Static Library
 STATIC_PKG_NAME="onnxruntime-linux-x64-cuda${CUDA_VER}-trt-rtx-static"
-# 回到构建目录找 install-static
-cd ../$ORT_ROOT/$BUILD_DIR_NAME/Release
-cp -r install-static ../../$DIST_DIR/$STATIC_PKG_NAME
-cd ../../$DIST_DIR
-7z a ${STATIC_PKG_NAME}.7z $STATIC_PKG_NAME
-rm -rf $STATIC_PKG_NAME
+echo "📦 Packaging Static Libs -> $STATIC_PKG_NAME"
 
-# 3. 打包 Wheel
-cd ../$ORT_ROOT/$BUILD_DIR_NAME/Release
-cp dist/*.whl ../../$DIST_DIR/
+# 清理旧数据并复制
+rm -rf "$DIST_ABS_PATH/$STATIC_PKG_NAME"
+cp -r install-static "$DIST_ABS_PATH/$STATIC_PKG_NAME"
 
-popd # 退出 build 目录
+# 切换到 output 目录进行压缩
+pushd "$DIST_ABS_PATH" > /dev/null
+7z a "${STATIC_PKG_NAME}.7z" "$STATIC_PKG_NAME"
+rm -rf "$STATIC_PKG_NAME"
+popd > /dev/null
+
+# 4. 打包 Wheel
+echo "📦 Copying Wheels..."
+# Wheel 文件通常在 dist 目录下
+if ls dist/*.whl 1> /dev/null 2>&1; then
+    cp dist/*.whl "$DIST_ABS_PATH/"
+else
+    echo "⚠️ No wheels found in dist/"
+fi
+
+# 退出构建目录 build-release/Release
+popd 
 
 echo "=== All Done ==="
-ls -l $DIST_DIR
+ls -l "$DIST_ABS_PATH"
