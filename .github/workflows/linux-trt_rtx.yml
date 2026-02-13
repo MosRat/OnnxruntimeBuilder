@@ -94,10 +94,14 @@ jobs:
           path: onnxruntime
           ref: ${{ steps.get_tag.outputs.tag }} # 使用刚才获取的 Tag
           submodules: recursive
-          
+
       - name: Patch ORT for Clang 20
         working-directory: ${{ github.workspace }}/onnxruntime
-        run: patch -p1 < ../patches/spin_pause_clang20.patch
+        run: |
+          ls -la
+          ls .. -la
+          pwd
+          patch -p1 < ../patches/spin_pause_clang20.patch
 
 
       # 5. 初始化 TensorRT-RTX (使用我们定义的本地 Action)
