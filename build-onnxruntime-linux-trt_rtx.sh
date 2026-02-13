@@ -69,45 +69,84 @@ function combine_libs_linux() {
 
 # 核心静态库收集函数
 function collect_static_libs() {
-    echo "--- Collecting Static Libs ---"
-    if [ -d "install-static" ]; then
-        rm -r -f install-static
-    fi
+    echo "--- Collecting Static Libs (Ninja Mode) ---"
+    
+    # 1. 准备目录
+    if [ -d "install-static" ]; then rm -rf install-static; fi
     mkdir -p install-static/lib
-
-    # 复制头文件
+    
+    # 2. 复制头文件
     if [ -d "install/include" ]; then
         cp -r install/include install-static
     fi
 
-    # 检查 link.txt 是否存在 (关键)
-    if [ ! -f "CMakeFiles/onnxruntime.dir/link.txt" ]; then
-        echo "❌ link.txt is not exist at $(pwd)/CMakeFiles/onnxruntime.dir/link.txt"
-        echo "Directory content:"
-        ls -F
-        exit 1
-    fi
-
-    ar_exist=$(is_cmd_exist ar)
-    ranlib_exist=$(is_cmd_exist ranlib)
+    # 3. 扫描需要合并的静态库列表
+    # 注意：根据你的日志，库文件就在当前目录 (build-release/Release) 下
+    # 我们排除 test, mock, training 等非推理核心库，保留 providers 和核心组件
+    # 这里的 grep -v pattern 可以根据你的实际需求增删
+    TARGET_LIBS=$(ls libonnxruntime_*.a 2>/dev/null | grep -vE "test|mock|training|eager")
     
-    if [ "$ar_exist" == "true" ] && [ "$ranlib_exist" == "true" ]; then
-        echo "Using ar merge (combine_libs_linux)..."
-        combine_libs_linux
-        libs="onnxruntime"
-    else
-        echo "Using legacy copy (copy_libs)..."
-        libs=$(copy_libs)
+    # 必须包含 protobuf 相关的库 (onnx 依赖)，通常它们也会被编出来或者在 _deps 中
+    # 如果 protobuf 已经静态链接进 onnxruntime_common 则不需要额外处理
+    # 这里我们只关注 onnxruntime 自己的组件
+    
+    if [ -z "$TARGET_LIBS" ]; then
+        echo "❌ Error: No libonnxruntime_*.a found in $(pwd)!"
+        ls -F
+        # 此时必须退出，因为没有库文件打包也没意义
+        exit 1 
     fi
 
-    # 生成 CMake Config
-    echo "set(OnnxRuntime_INCLUDE_DIRS \"\${CMAKE_CURRENT_LIST_DIR}/include\")" >install-static/OnnxRuntimeConfig.cmake
-    echo "include_directories(\${OnnxRuntime_INCLUDE_DIRS})" >>install-static/OnnxRuntimeConfig.cmake
-    echo "link_directories(\${CMAKE_CURRENT_LIST_DIR}/lib)" >>install-static/OnnxRuntimeConfig.cmake
-    echo "set(OnnxRuntime_LIBS $libs)" >>install-static/OnnxRuntimeConfig.cmake
+    echo "Found libraries to merge:"
+    echo "$TARGET_LIBS"
 
-    # 备份 link.txt 用于调试
-    cp CMakeFiles/onnxruntime.dir/link.txt install-static/link.log
+    # 4. 生成 MRI 脚本用于合并
+    MRI_FILE="install-static/libonnxruntime.mri"
+    OUTPUT_LIB="install-static/lib/libonnxruntime.a"
+    
+    echo "create $OUTPUT_LIB" > $MRI_FILE
+    
+    for lib in $TARGET_LIBS; do
+        echo "addlib ${PWD}/$lib" >> $MRI_FILE
+    done
+    
+    echo "save" >> $MRI_FILE
+    echo "end" >> $MRI_FILE
+
+    # 5. 执行合并 (带容错回退)
+    echo "Attempting to merge libraries into $OUTPUT_LIB ..."
+    if ar -M < $MRI_FILE; then
+        echo "✅ Merge successful: $OUTPUT_LIB created."
+        libs_list="onnxruntime"
+    else
+        echo "⚠️ Merge failed! Falling back to copying individual libraries..."
+        rm -f $OUTPUT_LIB # 清理可能损坏的文件
+        
+        libs_list=""
+        for lib in $TARGET_LIBS; do
+            cp "$lib" install-static/lib/
+            
+            # 提取库名: libonnxruntime_common.a -> onnxruntime_common
+            name=${lib#lib}
+            name=${name%.a}
+            libs_list="${libs_list} ${name}"
+        done
+        echo "✅ Fallback: Copied individual static libraries."
+    fi
+
+    # 6. 生成 CMake Config
+    echo "Generating OnnxRuntimeConfig.cmake..."
+    {
+        echo "set(OnnxRuntime_INCLUDE_DIRS \"\${CMAKE_CURRENT_LIST_DIR}/include\")"
+        echo "include_directories(\${OnnxRuntime_INCLUDE_DIRS})"
+        echo "link_directories(\${CMAKE_CURRENT_LIST_DIR}/lib)"
+        # 如果合并成功，这里是 "onnxruntime"
+        # 如果回退，这里是 "onnxruntime_common onnxruntime_graph ..."
+        echo "set(OnnxRuntime_LIBS $libs_list)" 
+    } > install-static/OnnxRuntimeConfig.cmake
+    
+    # 7. 清理 MRI 临时文件
+    rm -f $MRI_FILE
 }
 
 # 共享库收集函数 (简化版，保留基本逻辑)
