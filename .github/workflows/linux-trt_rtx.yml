@@ -157,8 +157,8 @@ jobs:
         with:
           name: onnxruntime-linux-cuda${{ matrix.cuda_ver }}-rtx
           path: |
-            ./onnxruntime/*.7z
-            ./onnxruntime/*.whl
+            ./output/*.7z
+            ./output/*.whl
   release_assets:
     needs: build  # 等待 build 完成
     runs-on: ubuntu-latest

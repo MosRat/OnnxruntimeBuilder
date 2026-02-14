@@ -284,3 +284,4 @@ popd
 
 echo "=== All Done ==="
 ls -l "$DIST_ABS_PATH"
+echo "✅ Packaging successfully in $DIST_ABS_PATH"
