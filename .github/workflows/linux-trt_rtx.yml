@@ -3,12 +3,18 @@ name: linux-trt_rtx
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     # 保持使用 Ubuntu 20.04 容器，为了 glibc 兼容性
     container:
       image: ubuntu:20.04
+    
+    outputs:
+      ort_tag: ${{ steps.get_tag.outputs.tag }}
 
     strategy:
       fail-fast: false
@@ -151,5 +157,35 @@ jobs:
         with:
           name: onnxruntime-linux-cuda${{ matrix.cuda_ver }}-rtx
           path: |
-            ${{ github.workspace }}/output/*.7z
-            ${{ github.workspace }}/output/*.whl
+            ./onnxruntime/*.7z
+            ./onnxruntime/*.whl
+  release_assets:
+    needs: build  # 等待 build 完成
+    runs-on: ubuntu-latest
+    if: success() # 只有构建成功才发布
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          # 不指定 name 则下载所有 artifacts
+
+      - name: Display Downloaded Files
+        run: ls -R ./artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 使用构建任务传过来的 ORT 版本号，并加上日期防止重复
+          tag_name: "ort-${{ needs.build.outputs.ort_tag }}-${{ github.run_id }}"
+          name: "Ort Build: ${{ needs.build.outputs.ort_tag }}"
+          body: |
+            Auto-generated build from workflow.
+            Base ORT Version: ${{ needs.build.outputs.ort_tag }}
+          draft: false
+          prerelease: false
+          # 使用通配符匹配下载下来的所有文件
+          # download-artifact v4 会把文件放在子目录里，所以用 **/*.whl
+          files: |
+            ./artifacts/**/*.whl
+            ./artifacts/**/*.7z
