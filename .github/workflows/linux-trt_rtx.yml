@@ -126,6 +126,7 @@ jobs:
           # 安装 nvcc 和编译必要的库
           # sub-packages: '["nvcc", "cudart", "visual_studio_integration"]'
           linux-local-args: '["--toolkit"]'
+          log-file-suffix: 'cuda_setup_${{ matrix.cuda_ver }}.txt'
 
 
       # 8. 执行构建
