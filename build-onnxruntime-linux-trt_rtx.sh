@@ -148,7 +148,7 @@ function collect_static_libs() {
     # 7. 清理 MRI 临时文件
     rm -f $MRI_FILE
     cp -r libonnxruntime_providers*.so install-static/lib/
-    cp -r $/lib/libtensorrt_*.so install-static/lib/
+    cp -r $TRT_RTX_HOME/lib/libtensorrt_*.so install-static/lib/
 }
 
 # 共享库收集函数 (简化版，保留基本逻辑)
@@ -167,7 +167,7 @@ function collect_shared_lib() {
     echo "link_directories(\${CMAKE_CURRENT_LIST_DIR}/lib)" >>install/OnnxRuntimeConfig.cmake
     echo "set(OnnxRuntime_LIBS onnxruntime)" >>install/OnnxRuntimeConfig.cmake
 
-    cp -r $TRT_HOME/lib/libtensorrt_*.so install/lib/
+    cp -r $TRT_RTX_HOME/lib/libtensorrt_*.so install/lib/
 
 }
 
