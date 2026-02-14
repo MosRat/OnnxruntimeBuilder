@@ -148,7 +148,7 @@ function collect_static_libs() {
     # 7. 清理 MRI 临时文件
     rm -f $MRI_FILE
     cp -r libonnxruntime_providers*.so install-static/lib/
-    cp -r $TRT_RTX_HOME/lib/libtensorrt_*.so install-static/lib/
+    cp -r $TRT_RTX_HOME/lib/libtensorrt_*.so* install-static/lib/
 }
 
 # 共享库收集函数 (简化版，保留基本逻辑)
@@ -167,7 +167,7 @@ function collect_shared_lib() {
     echo "link_directories(\${CMAKE_CURRENT_LIST_DIR}/lib)" >>install/OnnxRuntimeConfig.cmake
     echo "set(OnnxRuntime_LIBS onnxruntime)" >>install/OnnxRuntimeConfig.cmake
 
-    cp -r $TRT_RTX_HOME/lib/libtensorrt_*.so install/lib/
+    cp -r $TRT_RTX_HOME/lib/libtensorrt_*.so* install/lib/
 
 }
 
@@ -274,11 +274,24 @@ popd > /dev/null
 echo "📦 Copying Wheels..."
 # Wheel 文件通常在 dist 目录下
 if ls dist/*.whl 1> /dev/null 2>&1; then
-    cp dist/*.whl "$DIST_ABS_PATH/"
+    # 遍历 dist 目录下的所有 whl 文件
+    for file in dist/*.whl; do
+        # 获取纯文件名 (例如 onnxruntime-1.24.1-...linux_x86_64.whl)
+        filename=$(basename "$file")
+        
+        # 提取不带后缀的文件名 (去掉 .whl)
+        base_name="${filename%.*}"
+        
+        # 拼接新文件名，加入 cuda 版本
+        # 格式示例: onnxruntime-1.24.1-...linux_x86_64_cuda12.1.whl
+        new_filename="${base_name}_cuda${CUDA_VER}.whl"
+        
+        echo "   ➡️ Renaming $filename to $new_filename"
+        cp "$file" "$DIST_ABS_PATH/$new_filename"
+    done
 else
     echo "⚠️ No wheels found in dist/"
 fi
-
 # 退出构建目录 build-release/Release
 popd 
 
